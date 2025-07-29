@@ -29,7 +29,7 @@ export TRAVIS_APP_HOST ?= $(shell hostname)
 export TRAVIS_BRANCH   ?= $(shell git describe --all --contains --dirty HEAD)
 export TRAVIS_TAG      ?= $(shell git describe --tags --abbrev=0)
 export GO_PACKAGE      := github.com/percona/mongodb_exporter
-export APP_VERSION     := $(shell echo $(TRAVIS_TAG) | sed -e 's/v//g')
+export APP_VERSION     := $(shell cat VERSION | tr -d '\n')
 export APP_REVISION    := $(shell git rev-parse HEAD)
 export BUILD_TIME      := $(shell date '+%Y%m%d-%H:%M:%S')
 
@@ -77,19 +77,50 @@ release:
 	@echo ">> building binary"
 	@CGO_ENABLED=0 $(GO) build -v \
 		-ldflags '\
-		-X '$(GO_PACKAGE)/vendor/github.com/percona/pmm/version.ProjectName=$(BIN_NAME)' \
-		-X '$(GO_PACKAGE)/vendor/github.com/percona/pmm/version.Version=$(APP_VERSION)' \
-		-X '$(GO_PACKAGE)/vendor/github.com/percona/pmm/version.PMMVersion=$(PMM_RELEASE_VERSION)' \
-		-X '$(GO_PACKAGE)/vendor/github.com/percona/pmm/version.Timestamp=$(PMM_RELEASE_TIMESTAMP)' \
-		-X '$(GO_PACKAGE)/vendor/github.com/percona/pmm/version.FullCommit=$(PMM_RELEASE_FULLCOMMIT)' \
-		-X '$(GO_PACKAGE)/vendor/github.com/percona/pmm/version.Branch=$(PMM_RELEASE_BRANCH)' \
-		-X '$(GO_PACKAGE)/vendor/github.com/prometheus/common/version.BuildUser=$(USER)@$(TRAVIS_APP_HOST)' \
+		-X 'github.com/percona/pmm/version.ProjectName=$(BIN_NAME)' \
+		-X 'github.com/percona/pmm/version.Version=$(APP_VERSION)' \
+		-X 'github.com/percona/pmm/version.PMMVersion=$(PMM_RELEASE_VERSION)' \
+		-X 'github.com/percona/pmm/version.Timestamp=$(PMM_RELEASE_TIMESTAMP)' \
+		-X 'github.com/percona/pmm/version.FullCommit=$(PMM_RELEASE_FULLCOMMIT)' \
+		-X 'github.com/percona/pmm/version.Branch=$(PMM_RELEASE_BRANCH)' \
+		-X 'github.com/prometheus/common/version.BuildUser=$(USER)@$(TRAVIS_APP_HOST)' \
 		'\
 		-o $(BIN_DIR)/$(BIN_NAME) .
 
 community-release: $(GOPATH)/bin/goreleaser
 	@echo ">> building release"
 	goreleaser release --rm-dist --skip-validate
+
+release-multi-arch: clean
+	@echo ">> building for linux/amd64"
+	@mkdir -p $(BIN_DIR)/$(BIN_NAME)-$(APP_VERSION).linux-amd64
+	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -v \
+		-ldflags '\
+		-X 'github.com/percona/pmm/version.ProjectName=$(BIN_NAME)' \
+		-X 'github.com/percona/pmm/version.Version=$(APP_VERSION)' \
+		-X 'github.com/percona/pmm/version.PMMVersion=$(PMM_RELEASE_VERSION)' \
+		-X 'github.com/percona/pmm/version.Timestamp=$(PMM_RELEASE_TIMESTAMP)' \
+		-X 'github.com/percona/pmm/version.FullCommit=$(PMM_RELEASE_FULLCOMMIT)' \
+		-X 'github.com/percona/pmm/version.Branch=$(PMM_RELEASE_BRANCH)' \
+		-X 'github.com/prometheus/common/version.BuildUser=$(USER)@$(TRAVIS_APP_HOST)' \
+		' \
+		-o $(BIN_DIR)/$(BIN_NAME)-$(APP_VERSION).linux-amd64/$(BIN_NAME) .
+	@cd $(BIN_DIR) && tar -czf $(BIN_NAME)-$(APP_VERSION).linux-amd64.tar.gz $(BIN_NAME)-$(APP_VERSION).linux-amd64
+
+	@echo ">> building for linux/aarch64"
+	@mkdir -p $(BIN_DIR)/$(BIN_NAME)-$(APP_VERSION).linux-aarch64
+	@GOOS=linux GOARCH=arm64 CGO_ENABLED=0 $(GO) build -v \
+		-ldflags '\
+		-X 'github.com/percona/pmm/version.ProjectName=$(BIN_NAME)' \
+		-X 'github.com/percona/pmm/version.Version=$(APP_VERSION)' \
+		-X 'github.com/percona/pmm/version.PMMVersion=$(PMM_RELEASE_VERSION)' \
+		-X 'github.com/percona/pmm/version.Timestamp=$(PMM_RELEASE_TIMESTAMP)' \
+		-X 'github.com/percona/pmm/version.FullCommit=$(PMM_RELEASE_FULLCOMMIT)' \
+		-X 'github.com/percona/pmm/version.Branch=$(PMM_RELEASE_BRANCH)' \
+		-X 'github.com/prometheus/common/version.BuildUser=$(USER)@$(TRAVIS_APP_HOST)' \
+		' \
+		-o $(BIN_DIR)/$(BIN_NAME)-$(APP_VERSION).linux-aarch64/$(BIN_NAME) .
+	@cd $(BIN_DIR) && tar -czf $(BIN_NAME)-$(APP_VERSION).linux-aarch64.tar.gz $(BIN_NAME)-$(APP_VERSION).linux-aarch64
 
 docker:
 	@echo ">> building docker image"
@@ -133,4 +164,4 @@ mongo-db-in-docker:
 gen-ssl-certs:
 	./scripts/ssl.sh
 
-.PHONY: init all style format build release test vet release docker clean check-vendor-synced mongo-db-in-docker gen-ssl-certs
+.PHONY: init all style format build release test vet release docker clean check-vendor-synced mongo-db-in-docker gen-ssl-certs release-multi-arch
