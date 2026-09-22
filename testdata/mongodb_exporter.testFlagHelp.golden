@@ -26,6 +26,9 @@ Flags:
       --collect.connpoolstats  Collect MongoDB connpoolstats
       --suppress.collectshardingstatus  
                                Suppress the collection of Sharding Status
+      --suppress.collectserverstatusv5  
+                               Suppress the modern MongoDB 5 server-status
+                               metric module
       --mongodb.uri=[mongodb://][user:pass@]host1[:port1][,host2[:port2],...][/database][?options]  
                                MongoDB URI, format
       --test                   Check MongoDB connection, print buildInfo()

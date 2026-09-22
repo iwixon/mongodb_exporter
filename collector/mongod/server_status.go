@@ -28,6 +28,7 @@ import (
 // ServerStatus keeps the data returned by the serverStatus() method.
 type ServerStatus struct {
 	commoncollector.ServerStatus `bson:",inline"`
+	Raw                          bson.Raw `bson:"-"`
 
 	Dur *DurStats `bson:"dur"`
 
@@ -141,16 +142,20 @@ func (status *ServerStatus) Describe(ch chan<- *prometheus.Desc) {
 
 // GetServerStatus returns the server status info.
 func GetServerStatus(client *mongo.Client) *ServerStatus {
-	result := &ServerStatus{}
+	var raw bson.Raw
 	err := client.Database("admin").RunCommand(context.TODO(), bson.D{
 		{Key: "serverStatus", Value: 1},
 		{Key: "recordStats", Value: 0},
 		{Key: "opLatencies", Value: bson.M{"histograms": true}},
-	}).Decode(result)
+	}).Decode(&raw)
 	if err != nil {
 		log.Errorf("Failed to get server status: %s", err)
 		return nil
 	}
-
+	result := &ServerStatus{Raw: raw}
+	if err := bson.Unmarshal(raw, result); err != nil {
+		log.Errorf("Failed to decode server status: %s", err)
+		return nil
+	}
 	return result
 }

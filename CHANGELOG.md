@@ -6,7 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Bounded MongoDB 5 server-status coverage for replication, flow control, sharding, workload, security, storage, and WiredTiger metrics under the `mongodb_server_status_` namespace.
+- The `--suppress.collectserverstatusv5` rollout switch disables only the new metric module.
 
+### Changed
+- Updated the MongoDB Go driver to v1.8.6 and release builds to include amd64 and arm64 artifacts.
 ## [0.11.2]
 ### Added
 - [PMM-6361](https://jira.percona.com/browse/PMM-6361): New flag `--suppress.collectshardingstatus` can be used to disable the collection of Sharding Status. This flag is not set by default. 
